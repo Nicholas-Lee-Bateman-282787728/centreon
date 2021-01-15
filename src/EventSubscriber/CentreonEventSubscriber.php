@@ -107,23 +107,30 @@ class CentreonEventSubscriber implements EventSubscriberInterface
      * @var ApiPlatform
      */
     private $apiPlatform;
+    /**
+     * @var Contact
+     */
+    private $contact;
 
     /**
      * @param RequestParametersInterface $requestParameters
      * @param ContainerInterface $container
      * @param Security $security
      * @param ApiPlatform $apiPlatform
+     * @param ContactInterface $contact
      */
     public function __construct(
         RequestParametersInterface $requestParameters,
         ContainerInterface $container,
         Security $security,
-        ApiPlatform $apiPlatform
+        ApiPlatform $apiPlatform,
+        ContactInterface $contact
     ) {
         $this->container = $container;
         $this->requestParameters = $requestParameters;
         $this->security = $security;
         $this->apiPlatform = $apiPlatform;
+        $this->contact = $contact;
     }
 
     /**
@@ -412,9 +419,13 @@ class CentreonEventSubscriber implements EventSubscriberInterface
      */
     public function initUser()
     {
+        /**
+         * @var ContactInterface $user
+         */
         if ($user = $this->security->getUser()) {
             EntityCreator::setContact($user);
             $this->initLanguage($user);
+            $this->initGlobalContact($user);
         }
     }
 
@@ -424,7 +435,7 @@ class CentreonEventSubscriber implements EventSubscriberInterface
      * @param ContactInterface $user
      * @return void
      */
-    private function initLanguage(Contact $user): void
+    private function initLanguage(ContactInterface $user): void
     {
         $locale = $user->getLocale() ?? $this->getBrowserLocale();
         $lang = $locale . '.' . Contact::DEFAULT_CHARSET;
@@ -450,5 +461,31 @@ class CentreonEventSubscriber implements EventSubscriberInterface
         }
 
         return $locale;
+    }
+
+    /**
+     * Initialize the contact for the global context.
+     *
+     * @param ContactInterface $user Local contact with information to be used
+     */
+    private function initGlobalContact(ContactInterface $user): void
+    {
+        $this->contact->setId($user->getId())
+            ->setName($user->getName())
+            ->setAlias($user->getAlias())
+            ->setEmail($user->getEmail())
+            ->setTemplateId($user->getTemplateId())
+            ->setIsActive($user->isActive())
+            ->setAdmin($user->isAdmin())
+            ->setTimezone($user->getTimezone())
+            ->setLocale($user->getLocale());
+
+        foreach ($user->getRoles() as $role) {
+            if (substr($role, 0, 8) === 'ROLE_API') {
+                $this->contact->addRole($role);
+            } else {
+                $this->contact->addTopologyRule($role);
+            }
+        }
     }
 }

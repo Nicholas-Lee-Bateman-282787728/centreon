@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2005 - 2020 Centreon (https://www.centreon.com/)
+ * Copyright 2005 - 2021 Centreon (https://www.centreon.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace Tests\Centreon\Domain\HostConfiguration\UseCase\V21;
 
-use Centreon\Domain\HostConfiguration\Interfaces\HostCategoryReadRepositoryInterface;
-use Centreon\Domain\HostConfiguration\UseCase\V21\FindHostCategories;
-use PHPStan\Testing\TestCase;
+use Centreon\Domain\HostConfiguration\HostCategoryService;
+use Centreon\Domain\HostConfiguration\UseCase\V21\HostCategory\FindHostCategories;
+use PHPUnit\Framework\TestCase;
 use Tests\Centreon\Domain\HostConfiguration\Model\HostCategoryTest;
 
 /**
@@ -33,9 +33,9 @@ use Tests\Centreon\Domain\HostConfiguration\Model\HostCategoryTest;
 class FindHostCategoriesTest extends TestCase
 {
     /**
-     * @var HostCategoryReadRepositoryInterface|\PHPUnit\Framework\MockObject\MockObject
+     * @var HostCategoryService&\PHPUnit\Framework\MockObject\MockObject
      */
-    private $hostCategoryReadRepository;
+    private $hostCategoryService;
     /**
      * @var \Centreon\Domain\HostConfiguration\Model\HostCategory
      */
@@ -43,7 +43,7 @@ class FindHostCategoriesTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->hostCategoryReadRepository = $this->createMock(HostCategoryReadRepositoryInterface::class);
+        $this->hostCategoryService = $this->createMock(HostCategoryService::class);
         $this->hostCategory = hostCategoryTest::createEntity();
     }
 
@@ -52,13 +52,13 @@ class FindHostCategoriesTest extends TestCase
      */
     private function createHostCategoryUseCase(): FindHostCategories
     {
-        return (new FindHostCategories($this->hostCategoryReadRepository));
+        return (new FindHostCategories($this->hostCategoryService));
     }
 
     public function testExecute(): void
     {
-        $this->hostCategoryReadRepository->expects($this->once())
-            ->method('findHostCategories')
+        $this->hostCategoryService->expects($this->once())
+            ->method('findAll')
             ->willReturn([$this->hostCategory]);
         $findHostCategories = $this->createHostCategoryUseCase();
         $response = $findHostCategories->execute();
